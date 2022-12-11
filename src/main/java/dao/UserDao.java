@@ -3,31 +3,29 @@ package dao;
 
 import domain.User;
 
+import javax.sql.DataSource;
 import java.sql.*;
 
 public class UserDao {
-    ConnectionMaker connectionMaker;
-    public UserDao(ConnectionMaker connectionMaker){
-        this.connectionMaker = connectionMaker;
+
+    DataSource dataSource;
+
+    UserDao() {
     }
 
-    public void add(User user)throws ClassNotFoundException, SQLException {
-        Connection c = connectionMaker.makeConnection();
-        PreparedStatement ps = c.prepareStatement("insert into users(id,name,password) values(?,?,?)");
-        ps.setString(1,user.getId());
-        ps.setString(2,user.getName());
-        ps.setString(3,user.getPassword());
-
-        ps.executeUpdate();
-
-        ps.close();
-        c.close();
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
-    public User get(String id) throws SQLException, ClassNotFoundException {
-        Connection c = connectionMaker.makeConnection();
+    public void add(User user) throws SQLException {
+        StatementStrategy st = new AddStatement(user);
+        jdbcContextStatementStrategy(st);
+    }
+
+    public User get(String id) throws SQLException {
+        Connection c = dataSource.getConnection();
         PreparedStatement ps = c.prepareStatement("select * from users where id = ?");
-        ps.setString(1,id);
+        ps.setString(1, id);
 
         ResultSet rs = ps.executeQuery();
         rs.next();
@@ -44,14 +42,51 @@ public class UserDao {
         return user;
     }
 
-    public int deleteAll() throws SQLException, ClassNotFoundException {
-        Connection c = connectionMaker.makeConnection();
-        PreparedStatement ps = c.prepareStatement("delete from users");
-        int ans = ps.executeUpdate();
+    public int deleteAll() throws SQLException {
+        StatementStrategy st = new DeleteAllStatement();
+        int ans = jdbcContextStatementStrategy(st);
 
+        return ans;
+    }
+
+    public int getCount() throws SQLException {
+        Connection c = dataSource.getConnection();
+        PreparedStatement ps = c.prepareStatement("select count(*) from users");
+        ResultSet rs = ps.executeQuery();
+        rs.next();
+        int count = rs.getInt(1);
+
+        rs.close();
         ps.close();
         c.close();
 
-        return ans;
+        return count;
+    }
+
+    public int jdbcContextStatementStrategy(StatementStrategy strategy) throws SQLException {
+        Connection c = null;
+        PreparedStatement ps = null;
+
+        try {
+            c = dataSource.getConnection();
+            ps = strategy.makePreparedStatement(c);
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            throw e;
+        } finally {
+            if (ps != null) {
+                try {
+                    ps.close();
+                } catch (SQLException e) {
+                }
+                if (c != null) {
+                    try {
+                        c.close();
+                    } catch (SQLException e) {
+                    }
+
+                }
+            }
+        }
     }
 }
