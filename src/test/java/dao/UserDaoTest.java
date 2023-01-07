@@ -7,8 +7,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import java.util.List;
 
 import java.sql.SQLException;
 
@@ -47,7 +49,18 @@ public class UserDaoTest {
     }
 
     @Test
-    public void addAndGet() throws SQLException, ClassNotFoundException {
+    public void addAll()throws SQLException{
+        dao.deleteAll();
+        dao.add(user);
+        dao.add(user1);
+        dao.add(user2);
+        List<User> users = dao.getAll();
+        assertEquals(users.size(),3);
+        assertEquals(dao.getCount(),3);
+    }
+
+    @Test
+    public void addAndGet() throws SQLException {
 
         dao.deleteAll();
         assertEquals(dao.getCount(),0);
@@ -58,4 +71,32 @@ public class UserDaoTest {
         assertEquals(user.getId(),user1.getId());
 
     }
+
+    @Test
+    public void delete() throws SQLException {
+        int res = dao.deleteAll();
+        assertEquals(res,1);
+    }
+
+    @Test(expected = DuplicateKeyException.class)
+    public void checkException() throws SQLException {
+        dao.deleteAll();
+        dao.add(user);
+        dao.add(user);
+    }
+
+    @Test
+    public void getCode(){
+        try{
+            dao.deleteAll();
+            dao.add(user);
+            dao.add(user);
+        }catch (DuplicateKeyException e){
+            e.printStackTrace();
+        }catch (SQLException e){
+            System.out.println(e.getErrorCode());
+        }
+    }
+
+
 }
