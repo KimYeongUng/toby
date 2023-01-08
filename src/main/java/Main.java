@@ -1,5 +1,5 @@
 import dao.DaoFactory;
-import dao.UserDao;
+import dao.UserDaoImpl;
 import domain.User;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -17,7 +17,7 @@ public class Main {
         user.setName("KIM");
         user.setPassword("1234");
 
-        UserDao dao = context.getBean("userDao",UserDao.class);
+        UserDaoImpl dao = context.getBean("userDao", UserDaoImpl.class);
         int ret = dao.deleteAll();
         System.out.println("DELETE RET:"+ret);
         dao.add(user);

@@ -18,18 +18,18 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactory.class)
-public class UserDaoTest {
+public class UserDaoImplTest {
 
     @Autowired
     private ApplicationContext context;
-    private UserDao dao;
+    private UserDaoImpl dao;
     private User user;
     private User user1;
     private User user2;
 
     @Before
     public void setUp(){
-        this.dao = context.getBean("userDao",UserDao.class);
+        this.dao = context.getBean("userDao", UserDaoImpl.class);
 
         user = new User();
         user.setId("1");
@@ -85,18 +85,6 @@ public class UserDaoTest {
         dao.add(user);
     }
 
-    @Test
-    public void getCode(){
-        try{
-            dao.deleteAll();
-            dao.add(user);
-            dao.add(user);
-        }catch (DuplicateKeyException e){
-            e.printStackTrace();
-        }catch (SQLException e){
-            System.out.println(e.getErrorCode());
-        }
-    }
 
 
 }
