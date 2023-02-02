@@ -1,6 +1,7 @@
 package dao;
 
 
+import domain.Level;
 import domain.User;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,13 +9,23 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
+import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import service.UserService;
+
+import javax.sql.DataSource;
+import java.util.Arrays;
 import java.util.List;
 
 import java.sql.SQLException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import static service.UserService.MIN_LOGIN_FOR_SILVER;
+import static service.UserService.MIN_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactory.class)
@@ -22,10 +33,23 @@ public class UserDaoImplTest {
 
     @Autowired
     private ApplicationContext context;
+    @Autowired
+    DataSource dataSource;
+
+    @Autowired
+    UserService service;
+
     private UserDaoImpl dao;
     private User user;
     private User user1;
     private User user2;
+
+    private User user3;
+
+    private User user4;
+
+    // fixture
+    List<User> users;
 
     @Before
     public void setUp(){
@@ -35,16 +59,43 @@ public class UserDaoImplTest {
         user.setId("1");
         user.setName("hero");
         user.setPassword("1234");
+        user.setLevel(Level.BASIC);
+        user.setLogin(MIN_LOGIN_FOR_SILVER-1);
+        user.setRecommend(0);
 
         user1 = new User();
         user1.setId("2");
         user1.setName("kim");
         user1.setPassword("1234");
+        user1.setLevel(Level.BASIC);
+        user1.setLogin(MIN_LOGIN_FOR_SILVER);
+        user1.setRecommend(0);
 
         user2 = new User();
         user2.setId("3");
         user2.setName("lee");
         user2.setPassword("1234");
+        user2.setLevel(Level.SILVER);
+        user2.setLogin(60);
+        user2.setRecommend(MIN_RECOMMEND_FOR_GOLD-1);
+
+        user3 = new User();
+        user3.setId("4");
+        user3.setName("name3");
+        user3.setPassword("1234");
+        user3.setLevel(Level.SILVER);
+        user3.setLogin(60);
+        user3.setRecommend(MIN_RECOMMEND_FOR_GOLD);
+
+        user4  = new User();
+        user4.setId("5");
+        user4.setName("name4");
+        user4.setPassword("1234");
+        user4.setLevel(Level.GOLD);
+        user4.setLogin(100);
+        user4.setRecommend(Integer.MAX_VALUE);
+
+        users = Arrays.asList(user,user1,user2,user3,user4);
 
     }
 
@@ -64,11 +115,15 @@ public class UserDaoImplTest {
 
         dao.deleteAll();
         assertEquals(dao.getCount(),0);
-        dao.add(user);
 
-        User user1 = dao.get("1");
-        assertEquals(dao.getCount(),1);
-        assertEquals(user.getId(),user1.getId());
+        dao.add(user);
+        User userget1 = dao.get("1");
+        checkSameUser(user,userget1);
+
+        dao.add(user1);
+        User userget2 = dao.get("2");
+        assertEquals(dao.getCount(),2);
+        checkSameUser(user1,userget2);
 
     }
 
@@ -85,6 +140,106 @@ public class UserDaoImplTest {
         dao.add(user);
     }
 
+    @Test(expected = DuplicateKeyException.class)
+    public void getCause(){
+        dao.deleteAll();
+        dao.add(user1);
+        dao.add(user1);
 
+    }
+
+    @Test
+    public void sqlExceptionTranslate(){
+        dao.deleteAll();
+
+        try {
+            dao.add(user1);
+            dao.add(user1);
+        }catch (DuplicateKeyException ex){
+            SQLException sqlex = (SQLException) ex.getRootCause();
+            SQLExceptionTranslator set = new SQLErrorCodeSQLExceptionTranslator(this.dataSource);
+            System.out.println(set.translate(null,null,sqlex));
+        }
+    }
+
+    @Test
+    public void update(){
+        dao.deleteAll();
+        assertEquals(dao.getCount(),0);
+
+        dao.add(user1);
+        assertEquals(dao.getCount(),1);
+        user1.setName("asdf");
+        user1.setLevel(Level.GOLD);
+        user1.setLogin(1000);
+        user1.setRecommend(999);
+        int res = dao.update(user1);
+        assertEquals(res,1);
+
+        dao.add(user2);
+        assertEquals(dao.getCount(),2);
+        User user2update = dao.get(user2.getId());
+        checkSameUser(user2update,user2);
+
+    }
+
+    @Test
+    public void bean(){
+        assertNotNull(service);
+    }
+
+    @Test
+    public void upgradeLevels(){
+        dao.deleteAll();
+
+        for (User user:users)
+            dao.add(user);
+
+        service.upgradeLevels();
+
+        checkLevel(users.get(0),false);
+        checkLevel(users.get(1),true);
+        checkLevel(users.get(2),false);
+        checkLevel(users.get(3),true);
+        checkLevel(users.get(4),false);
+
+    }
+
+    @Test
+    public void add(){
+        dao.deleteAll();
+
+        User userWithLevel = users.get(4);
+
+        User userWithoutLevel = users.get(0);
+        userWithoutLevel.setLevel(null);
+
+        service.add(userWithLevel);
+        service.add(userWithoutLevel);
+
+        User userWithLevelRead = dao.get(userWithLevel.getId());
+        User userWithoutLevelRead = dao.get(userWithoutLevel.getId());
+
+        assertEquals(userWithLevelRead.getLevel(),userWithLevel.getLevel());
+        assertEquals(userWithoutLevelRead.getLevel(),Level.BASIC);
+    }
+
+    private void checkLevel(User user, boolean upgraded) {
+        User usr = dao.get(user.getId());
+        if(upgraded)
+            assertEquals(usr.getLevel(),user.getLevel().nextLevel());
+        else
+            assertEquals(usr.getLevel(),user.getLevel());
+    }
+
+
+    private void checkSameUser(User user1,User user2){
+        assertEquals(user1.getId(),user2.getId());
+        assertEquals(user1.getName(),user2.getName());
+        assertEquals(user1.getPassword(),user2.getPassword());
+        assertEquals(user1.getLevel(),user2.getLevel());
+        assertEquals(user1.getLogin(),user2.getLogin());
+        assertEquals(user1.getRecommend(),user2.getRecommend());
+    }
 
 }

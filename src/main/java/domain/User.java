@@ -8,4 +8,16 @@ public class User {
     String password;
     String name;
 
+    Level level;
+    int login;
+    int recommend;
+
+    public void upgradeLevel(){
+        Level nextLevel = this.level.nextLevel();
+
+        if(nextLevel == null)
+            throw new IllegalStateException(this.level+" is not avaliable to upgrade");
+        else
+            this.level = nextLevel;
+    }
 }

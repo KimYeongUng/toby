@@ -1,6 +1,7 @@
 package dao;
 
 
+import domain.Level;
 import domain.User;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,6 +21,9 @@ public class UserDaoImpl implements UserDao {
         user.setId(rs.getString("id"));
         user.setName(rs.getString("name"));
         user.setPassword(rs.getString("password"));
+        user.setLevel(Level.getValueOf(rs.getInt("level")));
+        user.setLogin(rs.getInt("login"));
+        user.setRecommend(rs.getInt("recommend"));
         return user;
     };
 
@@ -33,10 +37,13 @@ public class UserDaoImpl implements UserDao {
     }
 
     public void add(User user) throws DuplicateKeyException {
-            this.jdbcTemplate.update("insert into users(id,name,password) values(?,?,?)"
+            this.jdbcTemplate.update("insert into users(id,name,password,level,login,recommend) values(?,?,?,?,?,?)"
                     , user.getId()
                     , user.getName()
-                    , user.getPassword());
+                    , user.getPassword()
+                    , user.getLevel().intValue()
+                    , user.getLogin()
+                    , user.getRecommend());
     }
 
     public User get(String id) {
@@ -50,6 +57,14 @@ public class UserDaoImpl implements UserDao {
 
     public int getCount() {
         return this.jdbcTemplate.queryForObject("select count(*) from users",Integer.class);
+    }
+
+    @Override
+    public int update(User user) {
+        return this.jdbcTemplate.update(
+                "update users set name=?,level=?,login=?,recommend=? where id=?",
+                user.getName(),user.getLevel().intValue(),user.getLogin(),user.getRecommend(),user.getId()
+        );
     }
 
     public List<User> getAll(){

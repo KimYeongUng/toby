@@ -3,6 +3,7 @@ package dao;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import service.UserService;
 
 import javax.sql.DataSource;
 
@@ -31,5 +32,12 @@ public class DaoFactory {
         dataSource.setPassword("1234");
 
         return dataSource;
+    }
+
+    @Bean
+    public UserService userService(){
+        UserService service = new UserService();
+        service.setUserDao(userDao());
+        return service;
     }
 }
