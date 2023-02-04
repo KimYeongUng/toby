@@ -2,6 +2,7 @@ package dao;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import service.UserService;
 
@@ -38,6 +39,13 @@ public class DaoFactory {
     public UserService userService(){
         UserService service = new UserService();
         service.setUserDao(userDao());
+        service.setDataSource(dataSource());
+        service.setTransactionManager(transactionManager());
         return service;
+    }
+
+    @Bean
+    public DataSourceTransactionManager transactionManager(){
+        return new DataSourceTransactionManager(dataSource());
     }
 }

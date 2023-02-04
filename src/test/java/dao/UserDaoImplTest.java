@@ -13,6 +13,7 @@ import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
 import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
 import service.UserService;
 
 import javax.sql.DataSource;
@@ -21,9 +22,7 @@ import java.util.List;
 
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
+import static org.junit.Assert.*;
 import static service.UserService.MIN_LOGIN_FOR_SILVER;
 import static service.UserService.MIN_RECOMMEND_FOR_GOLD;
 
@@ -38,6 +37,9 @@ public class UserDaoImplTest {
 
     @Autowired
     UserService service;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private UserDaoImpl dao;
     private User user;
@@ -189,7 +191,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    public void upgradeLevels(){
+    public void upgradeLevels() throws SQLException {
         dao.deleteAll();
 
         for (User user:users)
@@ -224,6 +226,29 @@ public class UserDaoImplTest {
         assertEquals(userWithoutLevelRead.getLevel(),Level.BASIC);
     }
 
+    @Test
+    public void upgradeAllorNothing(){
+        UserService testUserService = new UserServiceTest(users.get(3).getId());
+        testUserService.setUserDao(this.dao);
+        testUserService.setDataSource(this.dataSource);
+        testUserService.setTransactionManager(transactionManager);
+        dao.deleteAll();
+
+        for (User user:users)
+            dao.add(user);
+
+        try {
+            testUserService.upgradeLevels();
+            //fail("TestUserServiceException expected");
+        }catch (TestUserServiceException e){
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        checkLevel(users.get(1),false);
+    }
+
     private void checkLevel(User user, boolean upgraded) {
         User usr = dao.get(user.getId());
         if(upgraded)
@@ -240,6 +265,24 @@ public class UserDaoImplTest {
         assertEquals(user1.getLevel(),user2.getLevel());
         assertEquals(user1.getLogin(),user2.getLogin());
         assertEquals(user1.getRecommend(),user2.getRecommend());
+    }
+
+    public static class UserServiceTest extends UserService{
+        private String id;
+
+        public UserServiceTest(String id){
+            this.id = id;
+        }
+
+        @Override
+        protected void upgradeLevel(User user){
+            if(user.getId().equals(this.id))
+                super.upgradeLevel(user);
+        }
+    }
+
+    static class TestUserServiceException extends RuntimeException{
+
     }
 
 }
