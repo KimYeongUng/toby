@@ -11,12 +11,16 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
 import org.springframework.jdbc.support.SQLExceptionTranslator;
+import org.springframework.mail.MailSender;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
+import service.MockMailSender;
 import service.UserService;
 
 import javax.sql.DataSource;
+import javax.swing.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,6 +32,7 @@ import static service.UserService.MIN_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactory.class)
+@DirtiesContext
 public class UserDaoImplTest {
 
     @Autowired
@@ -37,6 +42,9 @@ public class UserDaoImplTest {
 
     @Autowired
     UserService service;
+
+    @Autowired
+    MailSender mailSender;
 
     @Autowired
     PlatformTransactionManager transactionManager;
@@ -64,6 +72,7 @@ public class UserDaoImplTest {
         user.setLevel(Level.BASIC);
         user.setLogin(MIN_LOGIN_FOR_SILVER-1);
         user.setRecommend(0);
+        user.setEmail("aaa@gmail.com");
 
         user1 = new User();
         user1.setId("2");
@@ -72,6 +81,7 @@ public class UserDaoImplTest {
         user1.setLevel(Level.BASIC);
         user1.setLogin(MIN_LOGIN_FOR_SILVER);
         user1.setRecommend(0);
+        user1.setEmail("bbb@gmail.com");
 
         user2 = new User();
         user2.setId("3");
@@ -80,6 +90,7 @@ public class UserDaoImplTest {
         user2.setLevel(Level.SILVER);
         user2.setLogin(60);
         user2.setRecommend(MIN_RECOMMEND_FOR_GOLD-1);
+        user2.setEmail("ccc@gmail.com");
 
         user3 = new User();
         user3.setId("4");
@@ -88,6 +99,7 @@ public class UserDaoImplTest {
         user3.setLevel(Level.SILVER);
         user3.setLogin(60);
         user3.setRecommend(MIN_RECOMMEND_FOR_GOLD);
+        user3.setEmail("ddd@naver.com");
 
         user4  = new User();
         user4.setId("5");
@@ -96,6 +108,7 @@ public class UserDaoImplTest {
         user4.setLevel(Level.GOLD);
         user4.setLogin(100);
         user4.setRecommend(Integer.MAX_VALUE);
+        user4.setEmail("eee@gmail.com");
 
         users = Arrays.asList(user,user1,user2,user3,user4);
 
@@ -104,16 +117,16 @@ public class UserDaoImplTest {
     @Test
     public void addAll()throws SQLException{
         dao.deleteAll();
-        dao.add(user);
-        dao.add(user1);
-        dao.add(user2);
+        for (User usr:users)
+            dao.add(usr);
+
         List<User> users = dao.getAll();
-        assertEquals(users.size(),3);
-        assertEquals(dao.getCount(),3);
+        assertEquals(users.size(),5);
+        assertEquals(dao.getCount(),5);
     }
 
     @Test
-    public void addAndGet() throws SQLException {
+    public void addAndGet() {
 
         dao.deleteAll();
         assertEquals(dao.getCount(),0);
@@ -132,7 +145,7 @@ public class UserDaoImplTest {
     @Test
     public void delete() throws SQLException {
         int res = dao.deleteAll();
-        assertEquals(res,1);
+        assertEquals(res,0);
     }
 
     @Test(expected = DuplicateKeyException.class)
@@ -197,6 +210,9 @@ public class UserDaoImplTest {
         for (User user:users)
             dao.add(user);
 
+        MockMailSender mockMailSender = new MockMailSender();
+        service.setMailSender(mockMailSender);
+
         service.upgradeLevels();
 
         checkLevel(users.get(0),false);
@@ -205,6 +221,8 @@ public class UserDaoImplTest {
         checkLevel(users.get(3),true);
         checkLevel(users.get(4),false);
 
+        List<String> request = mockMailSender.getRequests();
+        assertEquals(request.size(),2);
     }
 
     @Test
@@ -232,6 +250,7 @@ public class UserDaoImplTest {
         testUserService.setUserDao(this.dao);
         testUserService.setDataSource(this.dataSource);
         testUserService.setTransactionManager(transactionManager);
+        testUserService.setMailSender(mailSender);
         dao.deleteAll();
 
         for (User user:users)

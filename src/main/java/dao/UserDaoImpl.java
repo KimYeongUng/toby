@@ -37,13 +37,14 @@ public class UserDaoImpl implements UserDao {
     }
 
     public void add(User user) throws DuplicateKeyException {
-            this.jdbcTemplate.update("insert into users(id,name,password,level,login,recommend) values(?,?,?,?,?,?)"
+            this.jdbcTemplate.update("insert into users(id,name,password,level,login,recommend,email) values(?,?,?,?,?,?,?)"
                     , user.getId()
                     , user.getName()
                     , user.getPassword()
                     , user.getLevel().intValue()
                     , user.getLogin()
-                    , user.getRecommend());
+                    , user.getRecommend()
+                    , user.getEmail());
     }
 
     public User get(String id) {
@@ -62,8 +63,8 @@ public class UserDaoImpl implements UserDao {
     @Override
     public int update(User user) {
         return this.jdbcTemplate.update(
-                "update users set name=?,level=?,login=?,recommend=? where id=?",
-                user.getName(),user.getLevel().intValue(),user.getLogin(),user.getRecommend(),user.getId()
+                "update users set name=?,level=?,login=?,recommend=?,email=? where id=?",
+                user.getName(),user.getLevel().intValue(),user.getLogin(),user.getRecommend(),user.getEmail(),user.getId()
         );
     }
 

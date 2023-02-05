@@ -4,6 +4,8 @@ import dao.UserDao;
 import domain.Level;
 import domain.User;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -21,11 +23,17 @@ public class UserService {
 
     private PlatformTransactionManager transactionManager;
 
+    private MailSender mailSender;
+
     public UserService() {
     }
 
     public void setTransactionManager(PlatformTransactionManager transactionManager) {
         this.transactionManager = transactionManager;
+    }
+
+    public void setMailSender(MailSender mailSender) {
+        this.mailSender = mailSender;
     }
 
     public void setDataSource(DataSource dataSource){
@@ -43,8 +51,10 @@ public class UserService {
         try{
             List<User> users = dao.getAll();
             for (User user:users){
-                if(canUpgradeLevel(user))
+                if(canUpgradeLevel(user)) {
                     upgradeLevel(user);
+                    sendUpgradeEmail(user);
+                }
             }
             transactionManager.commit(status);
         }catch (Exception e){
@@ -72,5 +82,15 @@ public class UserService {
             user.setLevel(Level.BASIC);
 
         dao.add(user);
+    }
+
+    private void sendUpgradeEmail(User user){
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(user.getEmail());
+        message.setFrom("useradmin@spring.io");
+        message.setSubject("Upgrade Info.");
+        message.setText("Your level is upgraded: "+user.getLevel());
+
+        this.mailSender.send(message);
     }
 }
