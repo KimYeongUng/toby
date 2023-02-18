@@ -20,7 +20,6 @@ import service.MockMailSender;
 import service.UserService;
 
 import javax.sql.DataSource;
-import javax.swing.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -65,51 +64,17 @@ public class UserDaoImplTest {
     public void setUp(){
         this.dao = context.getBean("userDao", UserDaoImpl.class);
 
-        user = new User();
-        user.setId("1");
-        user.setName("hero");
-        user.setPassword("1234");
-        user.setLevel(Level.BASIC);
-        user.setLogin(MIN_LOGIN_FOR_SILVER-1);
-        user.setRecommend(0);
-        user.setEmail("aaa@gmail.com");
+        user = new User("1","hero","1234","user@email.com",Level.BASIC
+                ,MIN_LOGIN_FOR_SILVER-1,0);
+        user1 = new User("2","kim","1234","user1@emai.com",Level.BASIC
+                ,MIN_LOGIN_FOR_SILVER,0);
+        user2 = new User("3","lee","1234","user2@email.com",Level.SILVER
+                ,60,MIN_RECOMMEND_FOR_GOLD-1);
+        user3 = new User("4","name3","1234","user3@email.com",Level.SILVER
+                ,60,MIN_RECOMMEND_FOR_GOLD);
 
-        user1 = new User();
-        user1.setId("2");
-        user1.setName("kim");
-        user1.setPassword("1234");
-        user1.setLevel(Level.BASIC);
-        user1.setLogin(MIN_LOGIN_FOR_SILVER);
-        user1.setRecommend(0);
-        user1.setEmail("bbb@gmail.com");
-
-        user2 = new User();
-        user2.setId("3");
-        user2.setName("lee");
-        user2.setPassword("1234");
-        user2.setLevel(Level.SILVER);
-        user2.setLogin(60);
-        user2.setRecommend(MIN_RECOMMEND_FOR_GOLD-1);
-        user2.setEmail("ccc@gmail.com");
-
-        user3 = new User();
-        user3.setId("4");
-        user3.setName("name3");
-        user3.setPassword("1234");
-        user3.setLevel(Level.SILVER);
-        user3.setLogin(60);
-        user3.setRecommend(MIN_RECOMMEND_FOR_GOLD);
-        user3.setEmail("ddd@naver.com");
-
-        user4  = new User();
-        user4.setId("5");
-        user4.setName("name4");
-        user4.setPassword("1234");
-        user4.setLevel(Level.GOLD);
-        user4.setLogin(100);
-        user4.setRecommend(Integer.MAX_VALUE);
-        user4.setEmail("eee@gmail.com");
-
+        user4  = new User("5","user4","1234","user4@email.com",Level.GOLD,
+                100,Integer.MAX_VALUE);
         users = Arrays.asList(user,user1,user2,user3,user4);
 
     }

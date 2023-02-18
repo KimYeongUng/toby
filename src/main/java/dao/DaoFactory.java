@@ -5,8 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mail.MailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import service.DummyMailSender;
 import service.MockMailSender;
 import service.UserService;
 
