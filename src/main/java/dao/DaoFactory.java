@@ -7,6 +7,8 @@ import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mail.MailSender;
 import service.MockMailSender;
 import service.UserService;
+import service.impl.UserServiceImpl;
+import service.impl.UserServiceTx;
 
 import javax.sql.DataSource;
 
@@ -39,7 +41,15 @@ public class DaoFactory {
 
     @Bean
     public UserService userService(){
-        UserService service = new UserService();
+        UserServiceTx userService = new UserServiceTx();
+        userService.setUserService(userServiceImpl());
+        userService.setTransactionManager(transactionManager());
+        return userService;
+    }
+
+    @Bean
+    public UserServiceImpl userServiceImpl(){
+        UserServiceImpl service = new UserServiceImpl();
         service.setUserDao(userDao());
         service.setDataSource(dataSource());
         service.setTransactionManager(transactionManager());

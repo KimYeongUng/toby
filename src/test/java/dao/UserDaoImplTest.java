@@ -17,7 +17,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import service.MockMailSender;
-import service.UserService;
+import service.impl.UserServiceImpl;
+import service.impl.UserServiceTx;
 
 import javax.sql.DataSource;
 import java.util.Arrays;
@@ -26,8 +27,8 @@ import java.util.List;
 import java.sql.SQLException;
 
 import static org.junit.Assert.*;
-import static service.UserService.MIN_LOGIN_FOR_SILVER;
-import static service.UserService.MIN_RECOMMEND_FOR_GOLD;
+import static service.impl.UserServiceImpl.MIN_LOGIN_FOR_SILVER;
+import static service.impl.UserServiceImpl.MIN_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = DaoFactory.class)
@@ -40,7 +41,7 @@ public class UserDaoImplTest {
     DataSource dataSource;
 
     @Autowired
-    UserService service;
+    UserServiceImpl service;
 
     @Autowired
     MailSender mailSender;
@@ -211,23 +212,23 @@ public class UserDaoImplTest {
 
     @Test
     public void upgradeAllorNothing(){
-        UserService testUserService = new UserServiceTest(users.get(3).getId());
+        UserServiceImpl testUserService = new UserServiceTest(users.get(3).getId());
         testUserService.setUserDao(this.dao);
-        testUserService.setDataSource(this.dataSource);
-        testUserService.setTransactionManager(transactionManager);
         testUserService.setMailSender(mailSender);
+
+        UserServiceTx tx = new UserServiceTx();
+        tx.setTransactionManager(transactionManager);
+        tx.setUserService(testUserService);
+
         dao.deleteAll();
 
         for (User user:users)
             dao.add(user);
 
         try {
-            testUserService.upgradeLevels();
-            //fail("TestUserServiceException expected");
+            tx.upgradeLevels();
         }catch (TestUserServiceException e){
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
 
         checkLevel(users.get(1),false);
@@ -251,7 +252,7 @@ public class UserDaoImplTest {
         assertEquals(user1.getRecommend(),user2.getRecommend());
     }
 
-    public static class UserServiceTest extends UserService{
+    public static class UserServiceTest extends UserServiceImpl {
         private String id;
 
         public UserServiceTest(String id){
