@@ -6,12 +6,15 @@ import domain.User;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;
 import org.springframework.jdbc.support.SQLExceptionTranslator;
 import org.springframework.mail.MailSender;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -25,6 +28,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import java.sql.SQLException;
+import java.util.Objects;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.any;
 
 import static org.junit.Assert.*;
 import static service.impl.UserServiceImpl.MIN_LOGIN_FOR_SILVER;
@@ -171,24 +180,36 @@ public class UserDaoImplTest {
 
     @Test
     public void upgradeLevels() throws SQLException {
-        dao.deleteAll();
 
-        for (User user:users)
-            dao.add(user);
+        UserServiceImpl userService = new UserServiceImpl();
 
-        MockMailSender mockMailSender = new MockMailSender();
-        service.setMailSender(mockMailSender);
+        // mock object UserDao
+        UserDao mockUserDao = mock(UserDao.class);
+        Mockito.when(mockUserDao.getAll()).thenReturn(this.users);
+
+        // mock object MailSender
+        MailSender mockMailSender = mock(MockMailSender.class);
+
+        userService.setUserDao(mockUserDao);
+        userService.setMailSender(mockMailSender);
 
         service.upgradeLevels();
+        verify(mockUserDao,times(2)).update(any(User.class));
+        verify(mockUserDao,times(2)).update(any(User.class));
 
-        checkLevel(users.get(0),false);
-        checkLevel(users.get(1),true);
-        checkLevel(users.get(2),false);
-        checkLevel(users.get(3),true);
-        checkLevel(users.get(4),false);
+        verify(mockUserDao).update(users.get(1));
+        assertEquals(users.get(1).getLevel(),Level.SILVER);
 
-        List<String> request = mockMailSender.getRequests();
-        assertEquals(request.size(),2);
+        verify(mockUserDao).update(users.get(4));
+        assertEquals(users.get(4),Level.GOLD);
+
+        ArgumentCaptor<SimpleMailMessage> mailMessage =
+                ArgumentCaptor.forClass(SimpleMailMessage.class);
+
+        verify(mockMailSender,times(2)).send(mailMessage.capture());
+        List<SimpleMailMessage> list = mailMessage.getAllValues();
+        assertEquals(Objects.requireNonNull(list.get(0).getTo())[0],users.get(1).getEmail());
+        assertEquals(Objects.requireNonNull(list.get(1).getTo())[0],users.get(4).getEmail());
     }
 
     @Test
@@ -211,7 +232,7 @@ public class UserDaoImplTest {
     }
 
     @Test
-    public void upgradeAllorNothing(){
+    public void upgradeAllorNothing() throws Exception{
         UserServiceImpl testUserService = new UserServiceTest(users.get(3).getId());
         testUserService.setUserDao(this.dao);
         testUserService.setMailSender(mailSender);
@@ -228,7 +249,7 @@ public class UserDaoImplTest {
         try {
             tx.upgradeLevels();
         }catch (TestUserServiceException e){
-
+            throw e;
         }
 
         checkLevel(users.get(1),false);
