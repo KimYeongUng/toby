@@ -22,6 +22,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import service.MockMailSender;
+import service.TxProxyFactoryBean;
 import service.UserService;
 import service.impl.UserServiceImpl;
 
@@ -235,21 +236,14 @@ public class UserDaoImplTest {
     }
 
     @Test
+    @DirtiesContext
     public void upgradeAllorNothing() throws Exception{
         UserServiceImpl testUserService = new UserServiceTest(users.get(3).getId());
         testUserService.setUserDao(this.dao);
         testUserService.setMailSender(mailSender);
-
-        TransactionHandler handler = new TransactionHandler();
-        handler.setTarget(testUserService);
-        handler.setTransactionManager(transactionManager);
-        handler.setPattern("upgradeLevels");
-
-        UserService tx = (UserService)Proxy.newProxyInstance(
-                getClass().getClassLoader(),
-                new Class[]{UserService.class},
-                handler
-        );
+        TxProxyFactoryBean factoryBean = context.getBean("&userService",TxProxyFactoryBean.class);
+        factoryBean.setTarget(testUserService);
+        UserService userService = (UserService) factoryBean.getObject();
 
         dao.deleteAll();
 
@@ -257,7 +251,7 @@ public class UserDaoImplTest {
             dao.add(user);
 
         try {
-            tx.upgradeLevels();
+            userService.upgradeLevels();
         }catch (TestUserServiceException e){
             throw e;
         }

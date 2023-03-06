@@ -7,7 +7,7 @@ public class Message {
         this.text = text;
     }
 
-    public static Message getInstance(String text){
+    public static Message newMessage(String text){
         return new Message(text);
     }
 }

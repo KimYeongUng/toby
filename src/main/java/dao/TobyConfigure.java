@@ -1,12 +1,14 @@
 package dao;
 
-import ex.MessageBean;
+import ex.Message;
+import ex.MessageFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mail.MailSender;
 import service.MockMailSender;
+import service.TxProxyFactoryBean;
 import service.UserService;
 import service.impl.UserServiceImpl;
 import service.impl.UserServiceTx;
@@ -41,10 +43,11 @@ public class TobyConfigure {
     }
 
     @Bean
-    public UserService userService(){
-        UserServiceTx userService = new UserServiceTx();
-        userService.setUserService(userServiceImpl());
+    public TxProxyFactoryBean userService(){
+        TxProxyFactoryBean userService = new TxProxyFactoryBean();
+        userService.setServiceInterface(UserService.class);
         userService.setTransactionManager(transactionManager());
+        userService.setPattern("upgradeLevels");
         return userService;
     }
 
@@ -69,7 +72,8 @@ public class TobyConfigure {
     }
 
     @Bean
-    public MessageBean message(){
-        return MessageBean.getInstance("Message Bean");
+    public MessageFactoryBean message() throws Exception {
+        MessageFactoryBean factoryBean = new MessageFactoryBean("message");
+        return factoryBean;
     }
 }
