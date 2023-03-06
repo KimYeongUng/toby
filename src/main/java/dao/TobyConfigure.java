@@ -1,5 +1,6 @@
 package dao;
 
+import ex.MessageBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -13,7 +14,7 @@ import service.impl.UserServiceTx;
 import javax.sql.DataSource;
 
 @Configuration
-public class DaoFactory {
+public class TobyConfigure {
 
     @Bean
     public UserDaoImpl userDao(){
@@ -65,5 +66,10 @@ public class DaoFactory {
     @Bean
     public MailSender mailSender(){
         return new MockMailSender();
+    }
+
+    @Bean
+    public MessageBean message(){
+        return MessageBean.getInstance("Message Bean");
     }
 }

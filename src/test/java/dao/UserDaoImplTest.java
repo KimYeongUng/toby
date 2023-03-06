@@ -3,8 +3,10 @@ package dao;
 
 import domain.Level;
 import domain.User;
+import handler.TransactionHandler;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -20,10 +22,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import service.MockMailSender;
+import service.UserService;
 import service.impl.UserServiceImpl;
-import service.impl.UserServiceTx;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,7 +43,7 @@ import static service.impl.UserServiceImpl.MIN_LOGIN_FOR_SILVER;
 import static service.impl.UserServiceImpl.MIN_RECOMMEND_FOR_GOLD;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = DaoFactory.class)
+@ContextConfiguration(classes = TobyConfigure.class)
 @DirtiesContext
 public class UserDaoImplTest {
 
@@ -178,9 +181,9 @@ public class UserDaoImplTest {
         assertNotNull(service);
     }
 
+    @DisplayName("Mockito Framework")
     @Test
-    public void upgradeLevels() throws SQLException {
-
+    public void upgradeLevels() {
         UserServiceImpl userService = new UserServiceImpl();
 
         // mock object UserDao
@@ -237,9 +240,16 @@ public class UserDaoImplTest {
         testUserService.setUserDao(this.dao);
         testUserService.setMailSender(mailSender);
 
-        UserServiceTx tx = new UserServiceTx();
-        tx.setTransactionManager(transactionManager);
-        tx.setUserService(testUserService);
+        TransactionHandler handler = new TransactionHandler();
+        handler.setTarget(testUserService);
+        handler.setTransactionManager(transactionManager);
+        handler.setPattern("upgradeLevels");
+
+        UserService tx = (UserService)Proxy.newProxyInstance(
+                getClass().getClassLoader(),
+                new Class[]{UserService.class},
+                handler
+        );
 
         dao.deleteAll();
 

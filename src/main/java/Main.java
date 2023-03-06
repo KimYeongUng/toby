@@ -1,4 +1,4 @@
-import dao.DaoFactory;
+import dao.TobyConfigure;
 import dao.UserDaoImpl;
 import domain.User;
 import org.springframework.context.ApplicationContext;
@@ -10,7 +10,7 @@ import java.sql.SQLException;
 public class Main {
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
 
-        ApplicationContext context = new AnnotationConfigApplicationContext(DaoFactory.class);
+        ApplicationContext context = new AnnotationConfigApplicationContext(TobyConfigure.class);
 
         User user = new User();
         user.setId("1");
