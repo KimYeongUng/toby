@@ -6,6 +6,8 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.aop.framework.ProxyFactoryBean;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.aop.support.NameMatchMethodPointcut;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import reflection.Hello;
@@ -43,6 +45,22 @@ public class DynamicProxyTest {
         assertEquals(hello.sayHi("hero"),"HI HERO");
         assertEquals(hello.thankYou("hero"),"THANK YOU HERO");
 
+    }
+
+    @Test
+    public void pointCutAdvisor(){
+        ProxyFactoryBean pfBean = new ProxyFactoryBean();
+        pfBean.setTarget(new HelloTarget());
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedName("say*");
+
+        pfBean.addAdvisor(new DefaultPointcutAdvisor(pointcut,new UpperCaseAdvice()));
+
+        Hello hello = (Hello) pfBean.getObject();
+
+        assertEquals(hello.sayHello("hero"),"HELLO HERO");
+        assertEquals(hello.sayHi("hero"),"HI HERO");
+        assertEquals(hello.thankYou("hero"),"thank you hero");
     }
 
     static class UpperCaseAdvice implements MethodInterceptor {
