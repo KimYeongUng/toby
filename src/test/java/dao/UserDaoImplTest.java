@@ -27,7 +27,6 @@ import service.UserService;
 import service.impl.UserServiceImpl;
 
 import javax.sql.DataSource;
-import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
