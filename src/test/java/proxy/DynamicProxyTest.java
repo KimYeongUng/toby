@@ -5,6 +5,7 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.aop.ClassFilter;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.aop.support.NameMatchMethodPointcut;
@@ -18,6 +19,7 @@ import java.lang.reflect.Proxy;
 import java.util.Objects;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = TobyConfigure.class)
@@ -46,6 +48,44 @@ public class DynamicProxyTest {
         assertEquals(hello.thankYou("hero"),"THANK YOU HERO");
 
     }
+
+    @Test
+    public void classNamePointcutAdvisor(){
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut(){
+            public ClassFilter getClassFilter(){
+                return aClass -> aClass.getSimpleName().startsWith("HelloT");
+            }
+        };
+
+        pointcut.setMappedName("sayH*");
+
+        checkAdviced(new HelloTarget(),pointcut,true);
+        class HelloWorld extends HelloTarget{}
+        checkAdviced(new HelloWorld(),pointcut,false);
+
+        class HelloTest extends HelloTarget{}
+        checkAdviced(new HelloTest(),pointcut,true);
+
+    }
+
+    private void checkAdviced(Object target, NameMatchMethodPointcut pointcut, boolean adviced) {
+        ProxyFactoryBean pfBean = new ProxyFactoryBean();
+        pfBean.setTarget(target);
+        pfBean.addAdvisor(new DefaultPointcutAdvisor(pointcut,new UpperCaseAdvice()));
+        Hello hello  = (Hello) pfBean.getObject();
+
+        if(adviced){
+            assertEquals(hello.sayHello("hero"),"HELLO HERO");
+            assertEquals(hello.sayHi("hero"),"HI HERO");
+            assertEquals(hello.thankYou("hero"),"thank you hero");
+        }else {
+            assertEquals(hello.sayHello("hero"),"hello hero");
+            assertEquals(hello.sayHi("hero"),"hi hero");
+            assertEquals(hello.thankYou("hero"),"thank you hero");
+        }
+
+    }
+
 
     @Test
     public void pointCutAdvisor(){

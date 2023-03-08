@@ -2,16 +2,19 @@ package dao;
 
 import ex.Message;
 import ex.MessageFactoryBean;
+import org.springframework.aop.framework.ProxyFactoryBean;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
+import org.springframework.aop.support.NameMatchMethodPointcut;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mail.MailSender;
+import proxy.TransactionAdvice;
 import service.MockMailSender;
 import service.TxProxyFactoryBean;
 import service.UserService;
 import service.impl.UserServiceImpl;
-import service.impl.UserServiceTx;
 
 import javax.sql.DataSource;
 
@@ -43,7 +46,7 @@ public class TobyConfigure {
     }
 
     @Bean
-    public TxProxyFactoryBean userService(){
+    public TxProxyFactoryBean TxUserService(){
         TxProxyFactoryBean userService = new TxProxyFactoryBean();
         userService.setServiceInterface(UserService.class);
         userService.setTransactionManager(transactionManager());
@@ -51,7 +54,7 @@ public class TobyConfigure {
         return userService;
     }
 
-    @Bean
+    @Bean(name = "userServiceImpl")
     public UserServiceImpl userServiceImpl(){
         UserServiceImpl service = new UserServiceImpl();
         service.setUserDao(userDao());
@@ -76,4 +79,36 @@ public class TobyConfigure {
         MessageFactoryBean factoryBean = new MessageFactoryBean("message");
         return factoryBean;
     }
+
+    @Bean
+    public TransactionAdvice transactionAdvice(){
+        TransactionAdvice advice = new TransactionAdvice();
+        advice.setTransactionManager(transactionManager());
+        return advice;
+    }
+
+    @Bean
+    public NameMatchMethodPointcut transactionPointcut(){
+        NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
+        pointcut.setMappedName("upgrade*");
+        return pointcut;
+    }
+
+    @Bean(name = "transactionAdvisor")
+    public DefaultPointcutAdvisor transactionAdvisor(){
+        DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor();
+        advisor.setAdvice(transactionAdvice());
+        advisor.setPointcut(transactionPointcut());
+        return advisor;
+    }
+
+    @Bean(name = "userService")
+    public ProxyFactoryBean userService(){
+        ProxyFactoryBean pfBean = new ProxyFactoryBean();
+        pfBean.setTarget(userServiceImpl());
+        pfBean.setInterceptorNames("transactionAdvisor");
+
+        return pfBean;
+    }
+
 }

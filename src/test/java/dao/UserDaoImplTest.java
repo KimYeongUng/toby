@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DuplicateKeyException;
@@ -240,7 +241,7 @@ public class UserDaoImplTest {
         UserServiceImpl testUserService = new UserServiceTest(users.get(3).getId());
         testUserService.setUserDao(this.dao);
         testUserService.setMailSender(mailSender);
-        TxProxyFactoryBean factoryBean = context.getBean("&userService",TxProxyFactoryBean.class);
+        ProxyFactoryBean factoryBean = context.getBean("&userService",ProxyFactoryBean.class);
         factoryBean.setTarget(testUserService);
         UserService userService = (UserService) factoryBean.getObject();
 
