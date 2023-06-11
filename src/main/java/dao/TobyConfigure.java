@@ -1,8 +1,6 @@
 package dao;
 
-import ex.Message;
 import ex.MessageFactoryBean;
-import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.aop.support.NameMatchMethodPointcut;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mail.MailSender;
+import proxy.NameMatchClassMethodPointcut;
 import proxy.TransactionAdvice;
 import service.MockMailSender;
 import service.TxProxyFactoryBean;
@@ -45,6 +44,7 @@ public class TobyConfigure {
         return dataSource;
     }
 
+
     @Bean
     public TxProxyFactoryBean TxUserService(){
         TxProxyFactoryBean userService = new TxProxyFactoryBean();
@@ -54,12 +54,10 @@ public class TobyConfigure {
         return userService;
     }
 
-    @Bean(name = "userServiceImpl")
+    @Bean(name = "userService")
     public UserServiceImpl userServiceImpl(){
         UserServiceImpl service = new UserServiceImpl();
         service.setUserDao(userDao());
-        service.setDataSource(dataSource());
-        service.setTransactionManager(transactionManager());
         service.setMailSender(mailSender());
         return service;
     }
@@ -102,13 +100,17 @@ public class TobyConfigure {
         return advisor;
     }
 
-    @Bean(name = "userService")
-    public ProxyFactoryBean userService(){
-        ProxyFactoryBean pfBean = new ProxyFactoryBean();
-        pfBean.setTarget(userServiceImpl());
-        pfBean.setInterceptorNames("transactionAdvisor");
+    @Bean
+    public DefaultPointcutAdvisor defaultPointcutAdvisor(){
+        return new DefaultPointcutAdvisor();
+    }
 
-        return pfBean;
+    @Bean
+    public NameMatchClassMethodPointcut nameMatchMethodPointcut(){
+        NameMatchClassMethodPointcut pointcut = new NameMatchClassMethodPointcut();
+        pointcut.setMappedClassName("*ServiceImpl");
+        pointcut.setMappedName("upgrade*");
+        return pointcut;
     }
 
 }

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.opentest4j.TestAbortedException;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -238,7 +239,7 @@ public class UserDaoImplTest {
     @Test
     @DirtiesContext
     public void upgradeAllorNothing() throws Exception{
-        UserServiceImpl testUserService = new UserServiceTest(users.get(3).getId());
+        UserServiceImpl testUserService = new UserServiceTestImpl(users.get(3).getId());
         testUserService.setUserDao(this.dao);
         testUserService.setMailSender(mailSender);
         ProxyFactoryBean factoryBean = context.getBean("&userService",ProxyFactoryBean.class);
@@ -277,17 +278,19 @@ public class UserDaoImplTest {
         assertEquals(user1.getRecommend(),user2.getRecommend());
     }
 
-    public static class UserServiceTest extends UserServiceImpl {
-        private String id;
+    public static class UserServiceTestImpl extends UserServiceImpl {
+        private String id = "lee";
 
-        public UserServiceTest(String id){
+        public UserServiceTestImpl(String id){
             this.id = id;
         }
 
         @Override
         protected void upgradeLevel(User user){
             if(user.getId().equals(this.id))
-                super.upgradeLevel(user);
+                throw new TestUserServiceException();
+
+            super.upgradeLevel(user);
         }
     }
 
