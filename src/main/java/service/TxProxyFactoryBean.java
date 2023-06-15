@@ -13,14 +13,17 @@ public class TxProxyFactoryBean implements FactoryBean<Object> {
     String pattern;
     Class<?> serviceInterface;
 
+    // target setting
     public void setTarget(Object target){
         this.target = target;
     }
 
+    // transactionManager DI
     public void setTransactionManager(PlatformTransactionManager transactionManager){
         this.transactionManager = transactionManager;
     }
 
+    // pointCut - startWith 'get*'
     public void setPattern(String pattern){
         this.pattern = pattern;
     }
