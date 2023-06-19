@@ -43,7 +43,7 @@ public class DynamicProxyTest {
         pfBean.addAdvice(new UpperCaseAdvice());
         Hello hello = (Hello)pfBean.getObject();
 
-        assertEquals(hello.sayHello("hero"),"HELLO HERO");
+        assertEquals(Objects.requireNonNull(hello).sayHello("hero"),"HELLO HERO");
         assertEquals(hello.sayHi("hero"),"HI HERO");
         assertEquals(hello.thankYou("hero"),"THANK YOU HERO");
 
@@ -75,11 +75,11 @@ public class DynamicProxyTest {
         Hello hello  = (Hello) pfBean.getObject();
 
         if(adviced){
-            assertEquals(hello.sayHello("hero"),"HELLO HERO");
+            assertEquals(Objects.requireNonNull(hello).sayHello("hero"),"HELLO HERO");
             assertEquals(hello.sayHi("hero"),"HI HERO");
             assertEquals(hello.thankYou("hero"),"thank you hero");
         }else {
-            assertEquals(hello.sayHello("hero"),"hello hero");
+            assertEquals(Objects.requireNonNull(hello).sayHello("hero"),"hello hero");
             assertEquals(hello.sayHi("hero"),"hi hero");
             assertEquals(hello.thankYou("hero"),"thank you hero");
         }
@@ -98,9 +98,21 @@ public class DynamicProxyTest {
 
         Hello hello = (Hello) pfBean.getObject();
 
-        assertEquals(hello.sayHello("hero"),"HELLO HERO");
+        assertEquals(Objects.requireNonNull(hello).sayHello("hero"),"HELLO HERO");
         assertEquals(hello.sayHi("hero"),"HI HERO");
         assertEquals(hello.thankYou("hero"),"thank you hero");
+    }
+
+    @Test
+    public void proxyFactoryBean(){
+        ProxyFactoryBean pfBean = new ProxyFactoryBean();
+        pfBean.setTarget(new HelloTarget());
+        pfBean.addAdvice(new UpperCaseAdvice());
+        Hello proxied = (Hello) pfBean.getObject();
+
+        assertEquals(Objects.requireNonNull(proxied).sayHi("hero"),"HI HERO");
+        assertEquals(Objects.requireNonNull(proxied).sayHello("hero"),"HELLO HERO");
+        assertEquals(proxied.thankYou("hero"),"THANK YOU HERO");
     }
 
     static class UpperCaseAdvice implements MethodInterceptor {
