@@ -19,7 +19,6 @@ import java.lang.reflect.Proxy;
 import java.util.Objects;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = TobyConfigure.class)
